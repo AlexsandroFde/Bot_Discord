@@ -15,7 +15,7 @@ Este é um bot Discord escrito em Python usando a biblioteca discord.py. O bot p
 1. **Instalação das dependências:**
    Certifique-se de ter o Python e a biblioteca discord.py instalados. Você pode instalar a biblioteca discord.py usando o pip:
     ```bash
-    pip install discord.py
+    pip install discord
     ```
 
 2. **Configuração do token:**
