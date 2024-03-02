@@ -27,25 +27,25 @@ Este é um bot Discord escrito em Python usando a biblioteca discord.py. O bot p
 ## Funcionalidades Principais
 
 - **Spam de Mensagens:**
-- O bot pode enviar várias mensagens para um usuário especificado.
+    - O bot pode enviar várias mensagens para um usuário especificado.
 
 - **Movimentação de Usuários:**
-- O bot pode mover um usuário entre diferentes canais de voz.
+    - O bot pode mover um usuário entre diferentes canais de voz.
 
 - **Interromper o Spam:**
-- Comando para interromper o spam em andamento.
+    - Comando para interromper o spam em andamento.
 
 - **Limpeza de Mensagens:**
-- O bot pode limpar as mensagens de um usuário específico ou suas próprias mensagens no canal.
+    - O bot pode limpar as mensagens de um usuário específico ou suas próprias mensagens no canal.
 
 - **Envio de Mensagens:**
-- Os usuários autorizados podem usar o bot para enviar mensagens.
+    - Os usuários autorizados podem usar o bot para enviar mensagens.
 
 - **Mute e Desmute de Usuários:**
-- O bot pode mutar e desmutar usuários nos canais de voz.
+    - O bot pode mutar e desmutar usuários nos canais de voz.
 
 - **Ditadura:**
-- Implementação de uma "ditadura" para impedir que os usuários mandem mensagens.
+    - Implementação de uma "ditadura" para impedir que os usuários mandem mensagens.
 
 ## Contribuição
 Se você quiser contribuir para este projeto, sinta-se à vontade para abrir uma issue ou enviar um pull request.
