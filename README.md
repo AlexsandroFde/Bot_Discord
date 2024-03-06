@@ -47,5 +47,8 @@ Este é um bot Discord escrito em Python usando a biblioteca discord.py. O bot p
 - **Ditadura:**
     - Implementação de uma "ditadura" para impedir que os usuários mandem mensagens.
 
+- **Democracia:**
+    - Comando para desativar a "ditadura" que impede que os usuários mandem mensagens.
+
 ## Contribuição
 Se você quiser contribuir para este projeto, sinta-se à vontade para abrir uma issue ou enviar um pull request.
