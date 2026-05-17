@@ -1,4 +1,5 @@
 import os
+from dotenv import load_dotenv
 from bot.client import aclient
 from bot.commands.moderation.mensagem import message
 from bot.commands.moderation.clear import clear_messages
@@ -13,11 +14,8 @@ from bot.commands.info import message_embed
 from bot.events.on_message import on_message
 
 def main():
-    token = os.environ.get('BOT_TOKEN')
-    if token is None:
-        print("Token not found in environment variables.")
-        return
-    aclient.run(token)
+    load_dotenv()
+    aclient.run(os.getenv('DISCORD_TOKEN'))
 
 if __name__ == "__main__":
     main()

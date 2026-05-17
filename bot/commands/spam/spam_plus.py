@@ -17,6 +17,8 @@ async def spam_call(interaction: discord.Interaction, membro: discord.Member, qu
   calls = [i.id for i in interaction.guild.voice_channels if i != voice_channel]
 
   if len(calls) <= 2:
+    server.spam_user = None
+    server.interromper = True
     await interaction.followup.send(content="Não existem chats de voz o suficiente para o spam+")
     return
        
