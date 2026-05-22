@@ -8,8 +8,11 @@ class client(discord.Client):
 
   async def on_ready(self):
     await self.wait_until_ready()
-    if not self.synced: #Checar se os comandos slash foram sincronizados 
+    if not self.synced:
       await tree.sync()
+      for guild in self.guilds:
+        tree.copy_global_to(guild=guild)
+        await tree.sync(guild=guild)
       self.synced = True
     print(f"Entramos como {self.user}.")
 
