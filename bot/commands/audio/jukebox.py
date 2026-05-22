@@ -1,5 +1,7 @@
-from bot.client import tree, discord, aclient
-from bot.utils.voice import connect_voice
+from bot.client import tree, discord
+from bot.utils.voice import connect_voice, disconnect_voice, make_source, on_disconnect
+from bot.utils.stats import record_play
+from discord import app_commands
 import asyncio
 import random
 import os
@@ -10,6 +12,9 @@ MIN_DELAY = 5
 MAX_DELAY = 30
 
 _active: dict[int, bool] = {}
+
+# Garante que o jukebox seja desativado se o monitor de inatividade tirar o bot da call.
+on_disconnect(lambda guild_id: _active.pop(guild_id, None))
 
 
 def _get_audios() -> list[str]:
@@ -26,8 +31,10 @@ async def _jukebox_loop(voice_client: discord.VoiceClient, guild_id: int):
     while _active.get(guild_id) and voice_client.is_connected():
         audios = _get_audios()
         if audios and not voice_client.is_playing():
+            chosen = random.choice(audios)
             try:
-                voice_client.play(discord.FFmpegPCMAudio(random.choice(audios)))
+                voice_client.play(make_source(chosen, guild_id))
+                record_play(os.path.splitext(os.path.basename(chosen))[0])
             except Exception:
                 pass
 
@@ -39,8 +46,11 @@ async def _jukebox_loop(voice_client: discord.VoiceClient, guild_id: int):
 
         await asyncio.sleep(random.uniform(MIN_DELAY, MAX_DELAY))
 
+    _active.pop(guild_id, None)
+
 
 @tree.command(name='jukebox', description='Bot entra na call e toca áudios aleatórios da biblioteca')
+@app_commands.checks.cooldown(1, 5.0)
 async def jukebox(interaction: discord.Interaction):
     await interaction.response.defer(ephemeral=True)
 
@@ -58,9 +68,8 @@ async def jukebox(interaction: discord.Interaction):
         await interaction.followup.send(content="Nenhum áudio encontrado. Use /add_audio para adicionar.")
         return
 
-    voice_channel = interaction.user.voice.channel
     try:
-        voice_client = await connect_voice(interaction.guild, voice_channel)
+        voice_client = await connect_voice(interaction.guild, interaction.user.voice.channel)
     except Exception as e:
         await interaction.followup.send(content=f"Não foi possível entrar no chat de voz: {e}")
         return
@@ -74,15 +83,8 @@ async def jukebox(interaction: discord.Interaction):
 async def leave(interaction: discord.Interaction):
     await interaction.response.defer(ephemeral=True)
 
-    guild_id = interaction.guild.id
-    voice_client = interaction.guild.voice_client
-
-    if not voice_client or not voice_client.is_connected():
+    _active[interaction.guild.id] = False
+    if await disconnect_voice(interaction.guild):
+        await interaction.followup.send(content="Saí do chat de voz")
+    else:
         await interaction.followup.send(content="O bot não está em nenhum chat de voz")
-        return
-
-    _active[guild_id] = False
-    if voice_client.is_playing():
-        voice_client.stop()
-    await voice_client.disconnect()
-    await interaction.followup.send(content="Saí do chat de voz")

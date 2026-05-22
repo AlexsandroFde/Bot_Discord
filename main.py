@@ -11,8 +11,10 @@ from bot.commands.spam.spam import spam_message
 from bot.commands.spam.spam_plus import spam_call
 from bot.commands.spam.stop import interrupt_spam
 from bot.commands.info import message_embed
-from bot.commands.audio.play import play_soundpad, add_audio
+from bot.commands.audio.play import play_soundpad, add_audio, top_audios
 from bot.commands.audio.jukebox import jukebox, leave
+from bot.commands.audio.library import del_audio, rename_audio
+from bot.commands.audio.youtube import youtube
 from bot.events.on_message import on_message
 
 def main():

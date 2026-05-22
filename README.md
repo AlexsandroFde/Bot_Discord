@@ -1,54 +1,79 @@
-# Bot Discord
+# Bot Discord — Sayoko
 
-Este é um bot Discord escrito em Python usando a biblioteca discord.py. O bot possui várias funcionalidades, incluindo:
+Bot do Discord escrito em Python com a biblioteca [discord.py](https://discordpy.readthedocs.io/),
+focado em moderação, caos divertido e um soundpad de áudios na call.
 
-- Spam de mensagens
-- Movimentação de usuários entre canais de voz
-- Comandos para interromper o spam
-- Limpeza de mensagens
-- Envio de mensagens
-- Mute e desmute de usuários
-- Implementação de uma "ditadura" para impedir mensagens
+## Funcionalidades
 
-## Como usar
+### 🎵 Áudio
+- **Soundpad** (`/play`) — entra na call e abre um painel interativo com a biblioteca de áudios.
+  - Paginação para bibliotecas com mais de 25 áudios.
+  - Botões de volume (🔉 🔊), aleatório (🔀), parar (⏹) e atualizar (🔄).
+  - O painel sobrevive a reinícios do bot.
+- **`/play <áudio>`** — toca um áudio direto, com autocomplete por nome.
+- **Jukebox** (`/jukebox`) — toca áudios aleatórios da biblioteca em loop.
+- **YouTube** (`/youtube <link ou busca>`) — toca o áudio de um vídeo do YouTube na call.
+- **`/add_audio`**, **`/del_audio`**, **`/rename_audio`** — gerenciam a biblioteca de áudios.
+- **`/top`** — ranking dos áudios mais tocados.
+- **`/sair`** — tira o bot da call.
+- Normalização de loudness (todos os áudios saem num volume parecido) e auto-desconexão
+  quando a call fica vazia ou ociosa.
 
-1. **Instalação das dependências:**
-   Certifique-se de ter o Python e a biblioteca discord.py instalados. Você pode instalar a biblioteca discord.py usando o pip:
-    ```bash
-    pip install discord
-    ```
+### 🛡️ Moderação
+- **Spam de mensagens** e **spam em call** — envia mensagens em massa / move usuário entre calls.
+- **`/stop`** — interrompe o spam em andamento.
+- **Limpeza de mensagens** — apaga mensagens de um usuário ou do próprio bot.
+- **Envio de mensagens** pelo bot.
+- **Mute / desmute** de usuários nos canais de voz.
+- **Ditadura / Democracia** — bloqueia ou libera o envio de mensagens no servidor.
 
-2. **Configuração do token:**
-   Antes de executar o bot, você precisará configurar o token do bot. Para fazer isso, defina a variável de ambiente `BOT_TOKEN` com o token do seu bot Discord. Você pode definir essa variável de ambiente no seu sistema operacional. No Windows, você pode seguir estas instruções: [Como definir uma variável de ambiente no Windows](https://www.architectryan.com/2018/08/31/how-to-change-environment-variables-on-windows-10/). Em sistemas Unix-like (Linux, macOS), você pode usar o comando `export` no terminal. Certifique-se de que o nome da variável seja `BOT_TOKEN` e o valor seja o token do seu bot.
+### ℹ️ Outros
+- **`/info`** — informações sobre a Sayoko.
 
-3. **Execução do bot:**
-    Execute o arquivo Python para iniciar o bot:
+## Requisitos
 
-## Funcionalidades Principais
+- **Python 3.12+**
+- **FFmpeg** instalado e disponível no `PATH` (necessário para reproduzir áudio).
+- Dependências Python:
+  ```bash
+  pip install -U discord.py python-dotenv PyNaCl yt-dlp
+  ```
+  - `discord.py` — biblioteca do bot.
+  - `python-dotenv` — carrega o token do arquivo `.env`.
+  - `PyNaCl` — suporte a voz.
+  - `yt-dlp` — comando `/youtube` (opcional; sem ele apenas o `/youtube` fica indisponível).
 
-- **Spam de Mensagens:**
-    - O bot pode enviar várias mensagens para um usuário especificado.
+## Configuração
 
-- **Movimentação de Usuários:**
-    - O bot pode mover um usuário entre diferentes canais de voz.
+Crie um arquivo `.env` na raiz do projeto com o token do seu bot:
 
-- **Interromper o Spam:**
-    - Comando para interromper o spam em andamento.
+```env
+DISCORD_TOKEN=seu_token_aqui
+```
 
-- **Limpeza de Mensagens:**
-    - O bot pode limpar as mensagens de um usuário específico ou suas próprias mensagens no canal.
+## Execução
 
-- **Envio de Mensagens:**
-    - Os usuários autorizados podem usar o bot para enviar mensagens.
+```bash
+python main.py
+```
 
-- **Mute e Desmute de Usuários:**
-    - O bot pode mutar e desmutar usuários nos canais de voz.
+Na primeira inicialização o bot sincroniza os slash commands com os servidores.
+Reinicie o bot sempre que adicionar ou alterar comandos.
 
-- **Ditadura:**
-    - Implementação de uma "ditadura" para impedir que os usuários mandem mensagens.
+## Estrutura
 
-- **Democracia:**
-    - Comando para desativar a "ditadura" que impede que os usuários mandem mensagens.
+```
+Bot_Discord/
+├── assets/              # biblioteca de áudios (.mp3, .wav, .ogg, .m4a)
+├── bot/
+│   ├── client.py        # cliente, command tree e tratamento de erros
+│   ├── commands/        # comandos (audio, moderation, mute, spam, info)
+│   ├── events/          # handlers de eventos
+│   └── utils/           # helpers: voz, estatísticas, etc.
+├── main.py              # ponto de entrada
+└── .env                 # token (não versionado)
+```
 
 ## Contribuição
-Se você quiser contribuir para este projeto, sinta-se à vontade para abrir uma issue ou enviar um pull request.
+
+Sinta-se à vontade para abrir uma issue ou enviar um pull request.

@@ -9,6 +9,11 @@ class client(discord.Client):
   async def on_ready(self):
     await self.wait_until_ready()
     if not self.synced:
+      # Registra a View do Soundpad como persistente: os botões continuam
+      # funcionando mesmo depois que o bot reinicia.
+      from bot.commands.audio.play import register_soundpad
+      register_soundpad(self)
+
       await tree.sync()
       for guild in self.guilds:
         tree.copy_global_to(guild=guild)
@@ -28,3 +33,21 @@ class client(discord.Client):
   
 aclient = client()
 tree = app_commands.CommandTree(aclient)
+
+
+@tree.error
+async def on_app_command_error(interaction, error):
+  """Trata erros de slash commands — principalmente cooldown — sem derrubar nada."""
+  if isinstance(error, app_commands.CommandOnCooldown):
+    msg = f"⏳ Calma! Tente de novo em {error.retry_after:.1f}s."
+  elif isinstance(error, app_commands.CheckFailure):
+    msg = "Você não pode usar este comando agora."
+  else:
+    raise error
+  try:
+    if interaction.response.is_done():
+      await interaction.followup.send(msg, ephemeral=True)
+    else:
+      await interaction.response.send_message(msg, ephemeral=True)
+  except Exception:
+    pass
