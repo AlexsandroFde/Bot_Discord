@@ -14,10 +14,14 @@ class client(discord.Client):
       from bot.commands.audio.play import register_soundpad
       register_soundpad(self)
 
-      await tree.sync()
+      # Sincroniza por servidor primeiro (usa a lista global em memória para copiar).
       for guild in self.guilds:
         tree.copy_global_to(guild=guild)
         await tree.sync(guild=guild)
+
+      # Limpa o registro global no Discord para evitar duplicatas.
+      tree.clear_commands(guild=None)
+      await tree.sync()
       self.synced = True
     print(f"Entramos como {self.user}.")
 
