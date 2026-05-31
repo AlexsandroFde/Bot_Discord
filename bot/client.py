@@ -12,7 +12,9 @@ class client(discord.Client):
       # Registra a View do Soundpad como persistente: os botões continuam
       # funcionando mesmo depois que o bot reinicia.
       from bot.commands.audio.play import register_soundpad
+      from bot.commands.audio.youtube import register_youtube
       register_soundpad(self)
+      register_youtube(self)
 
       # Sincroniza por servidor primeiro (usa a lista global em memória para copiar).
       for guild in self.guilds:
