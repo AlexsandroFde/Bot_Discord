@@ -6,7 +6,7 @@ async def message_embed(interaction: discord.Interaction):
   user = await aclient.fetch_user(milenio)
   time = aclient.user.created_at
 
-  embed = discord.Embed(description=f'''Eu atualmente possuo **{len(tree.get_commands())-1} comandos** focados especificamente em causar o caos em seu servidor. Fui criada em {format_dt(time, style="D")} como forma de aprendizado.\nNo momento estou em desenvolvimento''', color=0x1e2e39) 
+  embed = discord.Embed(description=f'''Eu atualmente possuo **{len(tree.get_commands(guild=interaction.guild))} comandos** focados especificamente em causar o caos em seu servidor. Fui criada em {format_dt(time, style="D")} como forma de aprendizado.\nNo momento estou em desenvolvimento''', color=0x1e2e39)
   embed.set_author(name=f"Prazer, {aclient.user.name}", icon_url=aclient.user.avatar.url)
   embed.set_thumbnail(url=aclient.user.avatar.url)
   embed.set_footer(text="Desenvolvido por milenio.", icon_url=user.avatar.url)
