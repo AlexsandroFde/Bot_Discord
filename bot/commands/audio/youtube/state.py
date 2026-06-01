@@ -1,10 +1,15 @@
 """Estado da fila por servidor e formatadores (embed/duração)."""
 import asyncio
+import time
 import discord
 from collections import deque
 from dataclasses import dataclass, field
 
 from bot.utils.voice import on_disconnect
+
+_BAR_WIDTH = 15
+_BAR_FILLED = '▰'
+_BAR_EMPTY  = '▱'
 
 
 @dataclass
@@ -14,6 +19,7 @@ class QueueItem:
     webpage_url: str        # link original do YouTube
     duration: int | None
     requester: str
+    needs_resolve: bool = False  # True para faixas de playlist (stream ainda não extraído)
 
 
 @dataclass
@@ -21,7 +27,9 @@ class GuildQueue:
     items: deque = field(default_factory=deque)
     current: QueueItem | None = None
     message: discord.Message | None = None
-    gen: int = 0           # invalida 'after' callbacks de tracks substituídas
+    gen: int = 0             # invalida 'after' callbacks de tracks substituídas
+    started_at: float | None = None   # time.monotonic() quando a faixa atual começou/retomou
+    paused_at:  float | None = None   # time.monotonic() quando foi pausado (None = tocando)
 
 
 _queues: dict[int, GuildQueue] = {}
@@ -35,14 +43,38 @@ def get_queue(guild_id: int) -> GuildQueue:
     return q
 
 
+# ── Tempo decorrido ───────────────────────────────────────────────────────────
+
+def elapsed(q: GuildQueue) -> int:
+    """Segundos decorridos da faixa atual, congelado enquanto pausado."""
+    if q.started_at is None:
+        return 0
+    ref = q.paused_at if q.paused_at is not None else time.monotonic()
+    return max(0, int(ref - q.started_at))
+
+
 # ── Formatadores ──────────────────────────────────────────────────────────────
 
 def format_duration(seconds: int | None) -> str:
     if not seconds:
-        return "—"
+        return "--:--"
     m, s = divmod(int(seconds), 60)
     h, m = divmod(m, 60)
-    return f"{h}:{m:02d}:{s:02d}" if h else f"{m}:{s:02d}"
+    return f"{h}:{m:02d}:{s:02d}" if h else f"{m:02d}:{s:02d}"
+
+
+def _progress_bar(elapsed_s: int, total_s: int | None) -> str:
+    elapsed_fmt = format_duration(elapsed_s)
+    total_fmt   = format_duration(total_s)
+
+    if not total_s or total_s <= 0:
+        bar = _BAR_EMPTY * _BAR_WIDTH
+        return f"`{elapsed_fmt}` {bar} `{total_fmt}`"
+
+    ratio  = min(elapsed_s / total_s, 1.0)
+    filled = round(ratio * _BAR_WIDTH)
+    bar    = _BAR_FILLED * filled + _BAR_EMPTY * (_BAR_WIDTH - filled)
+    return f"`{elapsed_fmt}` {bar} `{total_fmt}`"
 
 
 def make_embed(guild_id: int, *, paused: bool = False) -> discord.Embed:
@@ -50,13 +82,13 @@ def make_embed(guild_id: int, *, paused: bool = False) -> discord.Embed:
     cur = q.current
 
     if cur:
+        progress = _progress_bar(elapsed(q), cur.duration)
         embed = discord.Embed(
             title=("⏸ Pausado" if paused else "▶ Tocando agora"),
-            description=f"**[{cur.title[:200]}]({cur.webpage_url})**",
+            description=f"**[{cur.title[:200]}]({cur.webpage_url})**\n{progress}",
             color=0xE74C3C,
         )
-        embed.add_field(name="⏱ Duração", value=format_duration(cur.duration), inline=True)
-        embed.add_field(name="👤 Pediu",   value=cur.requester, inline=True)
+        embed.add_field(name="👤 Pediu", value=cur.requester, inline=True)
     else:
         embed = discord.Embed(title="⏹ Nada tocando", color=0x95A5A6)
 

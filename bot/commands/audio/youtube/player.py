@@ -1,4 +1,5 @@
 """Player interativo (View do discord.py) com botões pausar/pular/parar."""
+import time
 import discord
 
 from . import state
@@ -15,12 +16,18 @@ class PlayerView(discord.ui.View):
         if not vc:
             await interaction.response.send_message("Bot não está em call.", ephemeral=True)
             return
+        q = state.get_queue(interaction.guild.id)
         if vc.is_paused():
+            # Avança started_at pelo tempo que ficou pausado para manter elapsed correto
+            if q.paused_at is not None:
+                q.started_at = (q.started_at or time.monotonic()) + (time.monotonic() - q.paused_at)
+            q.paused_at = None
             vc.resume()
             await interaction.response.edit_message(
                 embed=state.make_embed(interaction.guild.id, paused=False), view=self,
             )
         elif vc.is_playing():
+            q.paused_at = time.monotonic()
             vc.pause()
             await interaction.response.edit_message(
                 embed=state.make_embed(interaction.guild.id, paused=True), view=self,
