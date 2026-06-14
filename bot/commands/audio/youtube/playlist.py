@@ -33,12 +33,15 @@ async def enqueue_playlist(
             or entry.get('url')
             or f"https://www.youtube.com/watch?v={entry['id']}"
         )
+        thumbs = entry.get('thumbnails') or []
         item = state.QueueItem(
             url=webpage_url,
             title=entry.get('title') or entry['id'],
             webpage_url=webpage_url,
             duration=entry.get('duration'),
             requester=interaction.user.display_name,
+            requester_mention=interaction.user.mention,
+            thumbnail=(thumbs[-1].get('url') if thumbs else None),
             needs_resolve=True,
         )
         q.items.append(item)
@@ -60,7 +63,7 @@ async def enqueue_playlist(
         await playback.start_next(interaction.guild)
 
         q.message = await interaction.channel.send(
-            embed=state.make_embed(interaction.guild.id),
+            embed=state.make_embed(interaction.guild),
             view=PlayerView(),
         )
         await interaction.followup.send(

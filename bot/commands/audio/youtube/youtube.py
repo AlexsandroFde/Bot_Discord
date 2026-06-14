@@ -48,6 +48,8 @@ async def youtube(interaction: discord.Interaction, busca: str):
         webpage_url=info.get('webpage_url') or info.get('original_url') or busca,
         duration=info.get('duration'),
         requester=interaction.user.display_name,
+        requester_mention=interaction.user.mention,
+        thumbnail=info.get('thumbnail'),
     )
 
     q = state.get_queue(interaction.guild.id)
@@ -67,7 +69,7 @@ async def youtube(interaction: discord.Interaction, busca: str):
             q.message = None
 
         q.message = await interaction.channel.send(
-            embed=state.make_embed(interaction.guild.id),
+            embed=state.make_embed(interaction.guild),
             view=PlayerView(),
         )
         await interaction.followup.send(

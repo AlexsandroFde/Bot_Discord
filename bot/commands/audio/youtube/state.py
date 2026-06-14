@@ -5,11 +5,15 @@ import discord
 from collections import deque
 from dataclasses import dataclass, field
 
-from bot.utils.voice import on_disconnect
+from bot.utils.voice import on_disconnect, get_volume
 
-_BAR_WIDTH = 15
-_BAR_FILLED = '▰'
-_BAR_EMPTY  = '▱'
+# Barra de progresso estilo "slider": trilho contínuo com um botão (knob).
+_BAR_WIDTH = 14
+_BAR_TRACK = '▬'
+_BAR_THUMB = '🔘'
+
+_ACCENT = 0x5865F2   # azul (blurple) do cabeçalho
+_IDLE   = 0x95A5A6   # cinza quando nada toca
 
 
 @dataclass
@@ -19,6 +23,8 @@ class QueueItem:
     webpage_url: str        # link original do YouTube
     duration: int | None
     requester: str
+    requester_mention: str = ""  # menção (<@id>) para exibir "Adicionado por"
+    thumbnail: str | None = None  # capa/arte do vídeo
     needs_resolve: bool = False  # True para faixas de playlist (stream ainda não extraído)
 
 
@@ -30,6 +36,8 @@ class GuildQueue:
     gen: int = 0             # invalida 'after' callbacks de tracks substituídas
     started_at: float | None = None   # time.monotonic() quando a faixa atual começou/retomou
     paused_at:  float | None = None   # time.monotonic() quando foi pausado (None = tocando)
+    loop: bool = False           # repete a faixa atual ao terminar
+    skip_requested: bool = False  # pular ignora o loop nesta transição
 
 
 _queues: dict[int, GuildQueue] = {}
@@ -64,44 +72,57 @@ def format_duration(seconds: int | None) -> str:
 
 
 def _progress_bar(elapsed_s: int, total_s: int | None) -> str:
+    """Trilho contínuo com um knob na posição atual (estilo slider)."""
     elapsed_fmt = format_duration(elapsed_s)
     total_fmt   = format_duration(total_s)
 
     if not total_s or total_s <= 0:
-        bar = _BAR_EMPTY * _BAR_WIDTH
+        bar = _BAR_TRACK * _BAR_WIDTH
         return f"`{elapsed_fmt}` {bar} `{total_fmt}`"
 
-    ratio  = min(elapsed_s / total_s, 1.0)
-    filled = round(ratio * _BAR_WIDTH)
-    bar    = _BAR_FILLED * filled + _BAR_EMPTY * (_BAR_WIDTH - filled)
+    ratio = min(elapsed_s / total_s, 1.0)
+    pos   = round(ratio * (_BAR_WIDTH - 1))
+    bar   = _BAR_TRACK * pos + _BAR_THUMB + _BAR_TRACK * (_BAR_WIDTH - 1 - pos)
     return f"`{elapsed_fmt}` {bar} `{total_fmt}`"
 
 
-def make_embed(guild_id: int, *, paused: bool = False) -> discord.Embed:
-    q   = get_queue(guild_id)
+def make_embed(guild: discord.Guild, *, paused: bool = False) -> discord.Embed:
+    q   = get_queue(guild.id)
     cur = q.current
 
-    if cur:
-        progress = _progress_bar(elapsed(q), cur.duration)
-        embed = discord.Embed(
-            title=("⏸ Pausado" if paused else "▶ Tocando agora"),
-            description=f"**[{cur.title[:200]}]({cur.webpage_url})**\n{progress}",
-            color=0xE74C3C,
-        )
-        embed.add_field(name="👤 Pediu", value=cur.requester, inline=True)
-    else:
-        embed = discord.Embed(title="⏹ Nada tocando", color=0x95A5A6)
+    if not cur:
+        return discord.Embed(title="⏹ Nada tocando", color=_IDLE)
+
+    vc      = guild.voice_client
+    channel = vc.channel.name if vc and vc.channel else "—"
+    volume  = int(get_volume(guild.id) * 100)
+    loop    = "Faixa" if q.loop else "Off"
+    pedido  = cur.requester_mention or cur.requester
+
+    description = (
+        f"### [{cur.title[:200]}]({cur.webpage_url})\n"
+        f"- Adicionado por {pedido}\n"
+        f"- 🔊 {channel}\n\n"
+        f"Fila: `{len(q.items)}`  ·  Volume: `{volume}%`  ·  Loop: `{loop}`\n\n"
+        f"{_progress_bar(elapsed(q), cur.duration)}"
+    )
+
+    embed = discord.Embed(
+        title=("⏸ Pausado" if paused else "▶ Tocando agora"),
+        description=description,
+        color=_ACCENT,
+    )
+    if cur.thumbnail:
+        embed.set_thumbnail(url=cur.thumbnail)
 
     if q.items:
         lines = [
-            f"`{i + 1:02d}.` {item.title[:60]}"
-            for i, item in enumerate(list(q.items)[:10])
+            f"`{i + 1:02d}.` {item.title[:55]}"
+            for i, item in enumerate(list(q.items)[:8])
         ]
-        if len(q.items) > 10:
-            lines.append(f"*+{len(q.items) - 10} restantes*")
-        embed.add_field(name=f"📜 Fila ({len(q.items)})", value="\n".join(lines), inline=False)
-    else:
-        embed.add_field(name="📜 Fila", value="*vazia*", inline=False)
+        if len(q.items) > 8:
+            lines.append(f"*+{len(q.items) - 8} restantes*")
+        embed.add_field(name="📜 Próximas", value="\n".join(lines), inline=False)
 
     return embed
 

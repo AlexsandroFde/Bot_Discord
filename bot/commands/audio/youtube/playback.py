@@ -32,9 +32,10 @@ async def start_next(guild: discord.Guild) -> bool:
         try:
             info = await extract_audio(item.webpage_url)
             if info and info.get('url'):
-                item.url      = info['url']
-                item.title    = info.get('title') or item.title
-                item.duration = info.get('duration') or item.duration
+                item.url       = info['url']
+                item.title     = info.get('title') or item.title
+                item.duration  = info.get('duration') or item.duration
+                item.thumbnail = info.get('thumbnail') or item.thumbnail
             else:
                 return await start_next(guild)
         except Exception:
@@ -65,7 +66,12 @@ async def _on_end(guild: discord.Guild, gen: int) -> None:
     q = state.get_queue(guild.id)
     if q.gen != gen:
         return
+    finished = q.current
     q.current = None
+    if q.loop and finished is not None and not q.skip_requested:
+        finished.needs_resolve = True  # re-extrai a URL (streams do YouTube expiram)
+        q.items.appendleft(finished)
+    q.skip_requested = False
     if q.items:
         await start_next(guild)
         await update_message(guild)
@@ -78,7 +84,7 @@ async def update_message(guild: discord.Guild, *, paused: bool = False) -> None:
     if not q.message:
         return
     try:
-        await q.message.edit(embed=state.make_embed(guild.id, paused=paused), view=PlayerView())
+        await q.message.edit(embed=state.make_embed(guild, paused=paused), view=PlayerView())
     except Exception:
         pass
 
